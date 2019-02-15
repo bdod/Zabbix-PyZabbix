@@ -43,7 +43,7 @@ def get_options():
         dest="formula",default="1",help="(Default: 1)Custom multiplier.")
     parser.add_option("-i","--interfaceid",action="store",type="string",\
         dest="interfaceid",default="",help="(REQUIRED,Default:"")ID of the item's host interface. Used only for host items. Optional for Zabbix agent (active), Zabbix internal, Zabbix trapper, Zabbix aggregate, database monitor and calculated items.")
-    parser.add_option("--history",action="store",type="int",\
+    parser.add_option("--history",action="store",\
         dest="history",default="7",help="(Default:7)Number of days to keep item's history data. Default:7.")
     parser.add_option("--units",action="store",type="string",\
         dest="units",default="",help="(Default:"")Value units.")
@@ -88,6 +88,8 @@ Possible values:
 - executed script for SSH and telnet items; 
 - additional parameters for database monitor items; 
 - formula for calculated items.""")
+    parser.add_option("--preprocessing",action="store_true",\
+        dest="preprocessing",default="",help="""Add predefined preprocessing params""")
 
     options,args = parser.parse_args()
 
@@ -118,7 +120,6 @@ def errmsg(msg):
 
 if __name__ == "__main__":
     options, args = get_options()
-
     zapi = ZabbixAPI(options.server,options.username,options.password)
 
     hostname = options.hostname
@@ -174,6 +175,44 @@ if __name__ == "__main__":
                 except Exception as e:
                     print str(e)
     else:
+#        "params": {
+#        "name": "Device uptime",
+#        "key_": "sysUpTime",
+#        "hostid": "11312",
+#        "type": 4,
+#        "snmp_community": "{$SNMP_COMMUNITY}",
+#        "snmp_oid": "SNMPv2-MIB::sysUpTime.0",
+#        "value_type": 1,
+#        "delay": "60s",
+#        "units": "uptime",
+#        "interfaceid": "1156",
+#        "preprocessing": [
+#            {
+#                "type": "1",
+#                "params": "0.01"
+#            }
+#        ]
+#    }
+#        params = {
+#        "preprocessing": [
+#            {
+#                "type": "1",
+#                "params": "0.01"
+#            }
+#        ]
+#       }
+        if options.preprocessing:
+          preprocessing = [{
+             "type": "1",
+             "params": "60"
+          },{
+             "type": "10",
+             "params": ""
+          }
+          ]
+        else:
+          preprocessing = []
+
         if hostname and not template:
             host = zapi.host.get({"filter":{"host":hostname}})[0]
 	    hostid = host['hostid']
@@ -185,8 +224,8 @@ if __name__ == "__main__":
             applicationid = json.loads(json.dumps(_application))["applicationid"]
         try:
 	    if 'applicationid' in dir():
-		print zapi.item.create({"name":name,"key_":key,"hostid":hostid,"type":(type),"interfaceid":interfaceid,"value_type":value_type,"delay":delay,"multiplier":multiplier,"formula":formula,"history":history,"delta":delta,"units":units,"params":params,"applications":[applicationid]})
+		print zapi.item.create({"name":name,"key_":key,"hostid":hostid,"type":(type),"interfaceid":interfaceid,"value_type":value_type,"delay":delay,"multiplier":multiplier,"formula":formula,"history":history,"delta":delta,"units":units,"params":params,"applications":[applicationid],"preprocessing": preprocessing})
 	    else:
-		print zapi.item.create({"name":name,"key_":key,"hostid":hostid,"type":(type),"interfaceid":interfaceid,"value_type":value_type,"delay":delay,"multiplier":multiplier,"formula":formula,"history":history,"delta":delta,"units":units,"params":params})
+		print zapi.item.create({"name":name,"key_":key,"hostid":hostid,"type":(type),"interfaceid":interfaceid,"value_type":value_type,"delay":delay,"multiplier":multiplier,"formula":formula,"history":history,"delta":delta,"units":units,"params":params,"preprocessing": preprocessing})
         except Exception as e:
             print str(e)

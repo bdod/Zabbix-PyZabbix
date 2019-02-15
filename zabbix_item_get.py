@@ -8,6 +8,7 @@ Created on 03.06.2015
 import optparse
 import sys
 import traceback
+import json
 from getpass import getpass
 from core import ZabbixAPI
 
@@ -28,6 +29,10 @@ def get_options():
         dest="key",help="(REQUIRED)Item key.")
     parser.add_option("-n","--name",action="store",type="string",\
         dest="name",help="(REQUIRED)Name of the item.")
+    parser.add_option("-T","--Template",action="store",type="string",\
+        dest="template",help="(REQUIRED)templatename for template.")
+    parser.add_option("-a","--application",action="store",type="string",\
+        dest="application",default="",help="application name for template.")
 
     options,args = parser.parse_args()
 
@@ -40,8 +45,8 @@ def get_options():
     if not options.password:
         options.password = getpass()
 
-    if not options.hostname:
-        options.hostname = raw_input('hostname:')
+    #if not options.hostname:
+    #    options.hostname = raw_input('hostname:')
 
     return options, args
 
@@ -57,6 +62,19 @@ if __name__ == "__main__":
     hostname = options.hostname
     key = options.key
     name = options.name
-    hostid=zapi.host.get({"filter":{"host":hostname}})[0]["hostid"]
-    item=zapi.item.get({"output": "extend","hostids": hostid,"search":{"key_": key}})
-    print hostid,'\t',item
+    application=options.application
+
+    if options.template:
+      template = options.template
+      template = zapi.template.get({"filter":{"host":template}})[0]
+      templateid = template["templateid"]
+      hostid = templateid
+      _application = zapi.application.get({"output": "extend","templateids":hostid,"filter":{"name":application}})[0]
+      applicationid = json.loads(json.dumps(_application))["applicationid"]
+    else:
+      hostid=zapi.host.get({"filter":{"host":hostname}})[0]["hostid"]
+    #item=zapi.item.get({"output": "extend","hostids": hostid,"search":{"key_": key}})
+    items =  zapi.item.get({"output": "extend","hostids": hostid,"search":{"key_": key}})
+    for i in items:
+      print i['itemid'],i['name'],i['key_']
+    #print hostid,'\t',item

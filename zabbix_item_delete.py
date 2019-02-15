@@ -28,6 +28,7 @@ def get_options():
         dest="key",help="(REQUIRED)Item key.")
     parser.add_option("-n","--name",action="store",type="string",\
         dest="name",help="(REQUIRED)Name of the item.")
+    parser.add_option("-i",'--item_id')
     parser.add_option("-f","--file",dest="filename",\
         metavar="FILE",help="Load values from input file. Specify - for standard input Each line of file contains whitespace delimited(if have <params>): hostname>4space<key>")
 
@@ -46,8 +47,8 @@ def get_options():
 	print("name,key and filename is not exist at the same time.")
 	sys.exit(-1)
 
-    if options.key and not options.hostname:
-        options.hostname = raw_input('hostname:')
+    #if options.key and not options.hostname:
+    #    options.hostname = raw_input('hostname:')
 
     return options, args
 
@@ -76,12 +77,15 @@ if __name__ == "__main__":
 		try:
                     hostid=zapi.host.get({"filter":{"host":hostname}})[0]["hostid"]
                     itemid=zapi.item.get({"output": "extend","hostids": hostid,"search":{"key_": key}})[0]["itemid"]
-	            print hostid,'\t',itemid
+	            print(hostid,'\t',itemid)
                     zapi.item.delete({"params":itemid})
                 except Exception as e:
-		    print e
+		    print (e)
+    elif options.itemid:
+        itemid=options.itemid
+        print(zapi.item.delete({"params":itemid}))
     else:
         hostid=zapi.host.get({"filter":{"host":hostname}})[0]["hostid"]
         itemid=zapi.item.get({"output": "extend","hostids": hostid,"search":{"key_": key}})[0]["itemid"]
-	print hostid,'\t',itemid
+	print(hostid,'\t',itemid)
         zapi.item.delete({"params":itemid})
